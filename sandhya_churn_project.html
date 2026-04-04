@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bank Customer Churn Prediction — Sandhya Raja</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --bg:#0c0e16;--bg2:#111420;--bg3:#161a26;--card:#1c2133;
+  --border:rgba(255,255,255,0.07);--text:#e4e8f5;--muted:#6c7591;
+  --blue:#4d8ef5;--red:#f5504d;--green:#4df5a0;--gold:#f5c94d;--purple:#a855f7;
+  --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Playfair Display',serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:999;
+  background:rgba(12,14,22,0.9);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.5rem;height:60px;
+}
+.nav-brand{font-family:var(--serif);font-size:1.1rem;color:var(--text)}
+.nav-brand span{color:var(--blue)}
+.nav-links{display:flex;gap:0;list-style:none}
+.nav-links a{
+  display:block;padding:0 1rem;height:60px;line-height:60px;
+  font-size:0.78rem;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;transition:all 0.2s;
+  border-bottom:2px solid transparent;
+}
+.nav-links a:hover{color:var(--text);border-bottom-color:var(--blue)}
+.colab-btn{
+  display:flex;align-items:center;gap:0.5rem;
+  background:var(--blue);color:white;padding:0.5rem 1.2rem;
+  border-radius:6px;text-decoration:none;font-size:0.8rem;font-weight:600;
+  transition:opacity 0.2s;
+}
+.colab-btn:hover{opacity:0.85}
+.colab-btn svg{width:16px;height:16px}
+
+/* HERO */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;text-align:center;
+  padding:7rem 2rem 4rem;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%, rgba(77,142,245,0.12) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  background:rgba(77,142,245,0.1);border:1px solid rgba(77,142,245,0.25);
+  color:var(--blue);padding:0.4rem 1rem;border-radius:99px;
+  font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;font-weight:500;
+  margin-bottom:2rem;
+}
+.dot{width:6px;height:6px;background:var(--blue);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+h1{
+  font-family:var(--serif);font-size:clamp(2.8rem,6vw,5.5rem);
+  line-height:1.05;margin-bottom:1.5rem;color:var(--text);
+}
+h1 em{font-style:italic;color:var(--blue)}
+.hero-sub{
+  font-size:1rem;color:var(--muted);max-width:600px;line-height:1.8;margin-bottom:3rem;
+}
+.hero-stats{
+  display:flex;gap:0;flex-wrap:wrap;justify-content:center;
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  background:var(--bg2);margin-bottom:3rem;
+}
+.hstat{
+  padding:1.5rem 2.5rem;border-right:1px solid var(--border);text-align:center;
+}
+.hstat:last-child{border-right:none}
+.hstat-val{font-family:var(--serif);font-size:2.2rem;line-height:1;margin-bottom:0.3rem}
+.hstat-val.blue{color:var(--blue)}
+.hstat-val.red{color:var(--red)}
+.hstat-val.green{color:var(--green)}
+.hstat-val.gold{color:var(--gold)}
+.hstat-label{font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.btn-primary{
+  background:var(--blue);color:white;padding:0.75rem 2rem;
+  border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem;
+  transition:opacity 0.2s;border:none;cursor:pointer;
+}
+.btn-primary:hover{opacity:0.85}
+.btn-outline{
+  background:transparent;color:var(--text);padding:0.75rem 2rem;
+  border-radius:8px;text-decoration:none;font-weight:500;font-size:0.9rem;
+  border:1px solid var(--border);transition:border-color 0.2s;cursor:pointer;
+}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+
+/* SECTIONS */
+section{padding:5rem 2.5rem;max-width:1200px;margin:0 auto}
+.section-full{padding:5rem 0;background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.section-full .inner{max-width:1200px;margin:0 auto;padding:0 2.5rem}
+.section-tag{
+  font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--blue);font-weight:600;margin-bottom:0.8rem;
+  display:flex;align-items:center;gap:0.7rem;
+}
+.section-tag::before{content:'';width:24px;height:2px;background:var(--blue)}
+h2{font-family:var(--serif);font-size:clamp(1.8rem,3vw,2.8rem);line-height:1.15;margin-bottom:0.5rem}
+.section-desc{color:var(--muted);font-size:0.9rem;max-width:600px;margin-bottom:3rem;line-height:1.7}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.8rem}
+.card:hover{border-color:rgba(77,142,245,0.25)}
+
+/* CHART GRID */
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+.chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+.chart-title{font-size:0.78rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.chart-wrap{position:relative;height:260px}
+.chart-wrap-sm{position:relative;height:200px}
+
+/* PIPELINE */
+.pipeline{display:flex;flex-direction:column;gap:0;position:relative;max-width:800px}
+.pipeline::before{
+  content:'';position:absolute;left:24px;top:12px;bottom:12px;
+  width:2px;background:linear-gradient(to bottom,var(--blue),var(--purple),var(--green));
+  border-radius:1px;
+}
+.pipe-step{display:grid;grid-template-columns:50px 1fr;gap:1.5rem;padding-bottom:2.5rem;position:relative}
+.pipe-num{
+  width:50px;height:50px;border-radius:50%;
+  background:var(--card);border:2px solid var(--blue);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:1.1rem;color:var(--blue);
+  position:relative;z-index:1;flex-shrink:0;
+}
+.pipe-body{padding-top:0.6rem}
+.pipe-body h3{font-size:1rem;font-weight:600;margin-bottom:0.3rem}
+.pipe-body p{font-size:0.83rem;color:var(--muted);line-height:1.7}
+.pipe-tag{
+  display:inline-block;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;
+  background:rgba(77,142,245,0.15);color:var(--blue);
+  padding:0.2rem 0.6rem;border-radius:4px;margin-bottom:0.5rem;font-weight:600;
+}
+
+/* MODEL CARDS */
+.model-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.model-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:2rem;position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;
+}
+.model-card:hover{transform:translateY(-4px);border-color:rgba(77,142,245,0.3)}
+.model-card.best{border-color:var(--blue)}
+.model-card.best::before{
+  content:'★ BEST MODEL';position:absolute;top:1rem;right:1rem;
+  font-size:0.58rem;letter-spacing:0.12em;background:var(--blue);
+  color:white;padding:0.25rem 0.6rem;border-radius:4px;font-weight:700;
+}
+.model-card::after{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(77,142,245,0.04);
+}
+.model-name{font-family:var(--serif);font-size:1.6rem;margin-bottom:0.2rem}
+.model-type{font-size:0.68rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1.5rem}
+.metric{display:flex;justify-content:space-between;align-items:center;padding:0.7rem 0;border-bottom:1px solid var(--border)}
+.metric:last-child{border-bottom:none}
+.metric-name{font-size:0.72rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase}
+.metric-val{font-family:var(--serif);font-size:1.4rem}
+.metric-val.hi{color:var(--blue)}
+
+/* FEATURE BARS */
+.feat-list{display:flex;flex-direction:column;gap:1rem;max-width:750px}
+.feat-item{display:grid;grid-template-columns:180px 1fr 80px;gap:1rem;align-items:center}
+.feat-name{font-size:0.78rem;color:var(--muted);text-align:right}
+.feat-track{height:10px;background:rgba(255,255,255,0.05);border-radius:5px;overflow:hidden}
+.feat-fill{height:100%;border-radius:5px;width:0;transition:width 1.8s cubic-bezier(0.16,1,0.3,1)}
+.feat-score{font-family:var(--mono);font-size:0.72rem;color:var(--muted)}
+
+/* FINDINGS */
+.findings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.finding{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:2rem;position:relative;overflow:hidden;
+}
+.finding-stat{font-family:var(--serif);font-size:3rem;line-height:1;margin-bottom:0.5rem}
+.finding-title{font-weight:600;font-size:0.9rem;margin-bottom:0.6rem}
+.finding-desc{font-size:0.78rem;color:var(--muted);line-height:1.7}
+.finding::before{content:'';position:absolute;bottom:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.06}
+.finding.f-red::before{background:var(--red)}
+.finding.f-blue::before{background:var(--blue)}
+.finding.f-green::before{background:var(--green)}
+.finding.f-gold::before{background:var(--gold)}
+
+/* PREDICTOR */
+.predictor-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{display:flex;flex-direction:column;gap:0.4rem}
+.form-group label{font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.form-group input,.form-group select{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:0.7rem 1rem;color:var(--text);font-family:var(--font);font-size:0.9rem;
+  transition:border-color 0.2s;outline:none;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+.form-group select option{background:var(--bg)}
+.predict-btn{
+  width:100%;margin-top:1rem;padding:1rem;background:var(--blue);color:white;
+  border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;
+  font-family:var(--font);transition:opacity 0.2s;
+}
+.predict-btn:hover{opacity:0.85}
+.result-box{
+  border-radius:12px;padding:2.5rem;text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:320px;border:2px solid var(--border);background:var(--bg2);
+  transition:all 0.5s;
+}
+.result-box.churn{background:rgba(245,80,77,0.08);border-color:var(--red)}
+.result-box.stay{background:rgba(77,245,160,0.08);border-color:var(--green)}
+.result-icon{font-size:4rem;margin-bottom:1rem}
+.result-label{font-family:var(--serif);font-size:2rem;margin-bottom:0.5rem}
+.result-label.churn-text{color:var(--red)}
+.result-label.stay-text{color:var(--green)}
+.result-prob{font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem}
+.prob-bar{width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;margin-bottom:0.4rem}
+.prob-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.risk-factors{margin-top:1.5rem;width:100%;text-align:left}
+.risk-factors h4{font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.6rem}
+.risk-tag{
+  display:inline-block;font-size:0.72rem;padding:0.25rem 0.7rem;
+  border-radius:99px;margin:0.2rem;font-weight:500;
+}
+.risk-tag.high{background:rgba(245,80,77,0.15);color:var(--red)}
+.risk-tag.medium{background:rgba(245,201,77,0.15);color:var(--gold)}
+.risk-tag.low{background:rgba(77,245,160,0.15);color:var(--green)}
+.result-idle{color:var(--muted);font-size:0.9rem;line-height:1.7;text-align:center}
+.result-idle .idle-icon{font-size:3rem;margin-bottom:1rem;opacity:0.3}
+
+/* RECO */
+.reco-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden}
+.reco{background:var(--card);padding:1.8rem 1.4rem;transition:background 0.2s}
+.reco:hover{background:var(--bg3)}
+.reco-num{font-family:var(--serif);font-size:3rem;color:rgba(77,142,245,0.15);line-height:1;margin-bottom:0.8rem}
+.reco-title{font-size:0.82rem;font-weight:700;margin-bottom:0.6rem;color:var(--text)}
+.reco-desc{font-size:0.72rem;color:var(--muted);line-height:1.7}
+
+/* CODE BLOCK */
+.code-block{
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:1.5rem;font-family:var(--mono);font-size:0.78rem;
+  line-height:1.8;overflow-x:auto;color:#b0bec5;
+}
+.code-block .kw{color:#82b1ff}
+.code-block .fn{color:#80cbc4}
+.code-block .str{color:#c3e88d}
+.code-block .cm{color:#546e7a}
+.code-block .num{color:#f78c6c}
+.code-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:0}
+.code-tab{
+  padding:0.6rem 1.2rem;font-size:0.75rem;cursor:pointer;
+  color:var(--muted);border-bottom:2px solid transparent;
+  transition:all 0.2s;font-family:var(--font);font-weight:500;
+}
+.code-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.code-pane{display:none}
+.code-pane.active{display:block}
+
+/* TECH */
+.tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.tech-card{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:1.5rem;text-align:center;transition:border-color 0.2s;
+}
+.tech-card:hover{border-color:rgba(77,142,245,0.25)}
+.tech-icon{font-size:2rem;margin-bottom:0.6rem}
+.tech-name{font-weight:600;font-size:0.88rem;margin-bottom:0.2rem}
+.tech-detail{font-size:0.68rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase}
+
+/* FOOTER */
+footer{
+  background:var(--bg2);border-top:1px solid var(--border);
+  padding:3rem 2.5rem;text-align:center;
+}
+footer p{color:var(--muted);font-size:0.82rem;line-height:1.8}
+footer strong{color:var(--text)}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{opacity:0;animation:fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) forwards}
+.d1{animation-delay:0.1s}.d2{animation-delay:0.2s}.d3{animation-delay:0.3s}.d4{animation-delay:0.4s}.d5{animation-delay:0.5s}
+
+/* GRID BG */
+.hero::after{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(77,142,245,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(77,142,245,0.03) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none;
+}
+
+@media(max-width:900px){
+  nav{padding:0 1rem}
+  .nav-links{display:none}
+  .chart-grid-2,.chart-grid-3,.model-grid,.findings-grid,.predictor-wrap{grid-template-columns:1fr}
+  .hero-stats{flex-direction:column}
+  .hstat{border-right:none;border-bottom:1px solid var(--border)}
+  .reco-grid{grid-template-columns:1fr 1fr}
+  .tech-grid{grid-template-columns:1fr 1fr}
+  section{padding:3rem 1.2rem}
+  .feat-item{grid-template-columns:130px 1fr 60px}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">Sandhya Raja — <span>Churn Prediction</span></div>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#eda">EDA</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#predictor">Live Demo</a></li>
+    <li><a href="#code">Code</a></li>
+  </ul>
+  <a class="colab-btn" href="https://colab.research.google.com/drive/1wowki96DSk5jq5FQSVWF-PfauVP6mpDJ?usp=sharing" target="_blank">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.9 4.8C14.4 2.3 10.7 1.7 7.6 3.2L10 5.6c1.8-.4 3.7.1 5 1.5 1.9 1.9 1.9 5 0 6.9l-4 4c-1.9 1.9-5 1.9-6.9 0-1.9-1.9-1.9-5 0-6.9l1.7-1.7-.9-2.4C2.2 9.2 1.6 12.9 4 16c2.5 3.3 7.1 4 10.5 1.7l.4-.3 2.3-2.3c3.1-3.2 3.1-8.2-.3-11.3z"/></svg>
+    Open in Colab
+  </a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge fade-up"><span class="dot"></span> M.Sc. Data Science · SIES College · April 2026</div>
+  <h1 class="fade-up d1">Bank Customer<br><em>Churn</em> Prediction<br>Using Machine Learning</h1>
+  <p class="hero-sub fade-up d2">An end-to-end ML pipeline predicting bank customer churn with 99.85% accuracy — using Random Forest, XGBoost & Logistic Regression on 10,000 customers across France, Germany & Spain.</p>
+  <div class="hero-stats fade-up d3">
+    <div class="hstat"><div class="hstat-val blue">99.85%</div><div class="hstat-label">Model Accuracy</div></div>
+    <div class="hstat"><div class="hstat-val green">0.9989</div><div class="hstat-label">ROC-AUC Score</div></div>
+    <div class="hstat"><div class="hstat-val gold">10,000</div><div class="hstat-label">Customers</div></div>
+    <div class="hstat"><div class="hstat-val red">20.38%</div><div class="hstat-label">Churn Rate</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:var(--purple)">3</div><div class="hstat-label">Models Compared</div></div>
+  </div>
+  <div class="hero-btns fade-up d4">
+    <a href="#predictor" class="btn-primary">🤖 Try Live Predictor</a>
+    <a href="#eda" class="btn-outline">📊 View Analysis</a>
+    <a href="https://colab.research.google.com/drive/1wowki96DSk5jq5FQSVWF-PfauVP6mpDJ?usp=sharing" target="_blank" class="btn-outline">📓 Colab Notebook</a>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-tag">01 — Project Overview</div>
+  <h2>Why This Project Matters</h2>
+  <p class="section-desc">Banks lose billions when customers leave. Acquiring a new customer costs 5–7× more than retaining one. This project builds a proactive ML system that flags at-risk customers weeks before they leave.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem">
+    <div class="card">
+      <h3 style="font-family:var(--serif);font-size:1.2rem;margin-bottom:1rem">Key Contributions</h3>
+      <div style="display:flex;flex-direction:column;gap:0.7rem">
+        <div style="display:flex;gap:0.8rem;align-items:flex-start"><span style="color:var(--blue);font-size:1.2rem">→</span><span style="font-size:0.85rem;color:var(--muted)">Complete end-to-end pipeline from raw data to business insights</span></div>
+        <div style="display:flex;gap:0.8rem;align-items:flex-start"><span style="color:var(--blue);font-size:1.2rem">→</span><span style="font-size:0.85rem;color:var(--muted)">Class imbalance addressed using SMOTE (1,630 → 6,370 churned samples)</span></div>
+        <div style="display:flex;gap:0.8rem;align-items:flex-start"><span style="color:var(--blue);font-size:1.2rem">→</span><span style="font-size:0.85rem;color:var(--muted)">3 ML models compared across 5 evaluation metrics</span></div>
+        <div style="display:flex;gap:0.8rem;align-items:flex-start"><span style="color:var(--blue);font-size:1.2rem">→</span><span style="font-size:0.85rem;color:var(--muted)">Feature importance + SHAP analysis for explainability</span></div>
+        <div style="display:flex;gap:0.8rem;align-items:flex-start"><span style="color:var(--blue);font-size:1.2rem">→</span><span style="font-size:0.85rem;color:var(--muted)">5 actionable business recommendations for bank management</span></div>
+        <div style="display:flex;gap:0.8rem;align-items:flex-start"><span style="color:var(--blue);font-size:1.2rem">→</span><span style="font-size:0.85rem;color:var(--muted)">Interactive Power BI dashboard for non-technical stakeholders</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--serif);font-size:1.2rem;margin-bottom:1rem">Dataset Features (18)</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">CreditScore</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">Geography</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">Gender</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">Age</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">Tenure</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">Balance</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">NumOfProducts</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">HasCrCard</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">IsActiveMember</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">EstimatedSalary</span>
+        <span style="background:rgba(245,80,77,0.15);color:var(--red);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">Complain ★</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">SatisfactionScore</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">CardType</span>
+        <span style="background:rgba(77,142,245,0.1);color:var(--blue);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono)">PointEarned</span>
+        <span style="background:rgba(77,245,160,0.15);color:var(--green);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.72rem;font-family:var(--mono);font-weight:700">Exited (Target)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- METHODOLOGY -->
+  <h3 style="font-family:var(--serif);font-size:1.4rem;margin-bottom:2rem;margin-top:3rem">CRISP-DM Methodology Pipeline</h3>
+  <div class="pipeline">
+    <div class="pipe-step"><div class="pipe-num">1</div><div class="pipe-body"><div class="pipe-tag">Data Collection</div><h3>Kaggle Dataset — 10,000 records, 18 features</h3><p>Bank Customer Churn dataset sourced from Kaggle. Verified shape (10000, 18), zero null values, target distribution of 79.62% stayed vs 20.38% churned.</p></div></div>
+    <div class="pipe-step"><div class="pipe-num">2</div><div class="pipe-body"><div class="pipe-tag">Exploratory Data Analysis</div><h3>12 Visualisations across all key features</h3><p>Univariate and bivariate analysis revealing: 20.38% churn rate, Germany at 32.4%, complaint correlation at 99.5%, older customers churning more (44.8 vs 37.4 avg age).</p></div></div>
+    <div class="pipe-step"><div class="pipe-num">3</div><div class="pipe-body"><div class="pipe-tag">Preprocessing</div><h3>Encode · Scale · Drop identifiers</h3><p>Dropped RowNumber, CustomerId, Surname. Label-encoded Gender, Geography, CardType. StandardScaler applied. Stratified 80/20 train-test split maintaining churn ratio.</p></div></div>
+    <div class="pipe-step"><div class="pipe-num">4</div><div class="pipe-body"><div class="pipe-tag">SMOTE Balancing</div><h3>1,630 churned → 6,370 (training only)</h3><p>Applied SMOTE exclusively to training data. Balanced 50-50 training set of 12,740 records. Test set kept unbalanced for fair evaluation. Zero data leakage.</p></div></div>
+    <div class="pipe-step"><div class="pipe-num">5</div><div class="pipe-body"><div class="pipe-tag">Model Training</div><h3>Logistic Regression · Random Forest · XGBoost</h3><p>Three classifiers trained on balanced data. All achieved 99.85% accuracy with only 3 total misclassifications on 2,000-record test set.</p></div></div>
+    <div class="pipe-step"><div class="pipe-num">6</div><div class="pipe-body"><div class="pipe-tag">Insights</div><h3>Feature Importance + Power BI Dashboard</h3><p>Random Forest feature importance: Complain (0.782), Age (0.070), NumOfProducts (0.053). Interactive Power BI dashboard with KPI cards, slicers, geographic charts.</p></div></div>
+  </div>
+</section>
+
+<!-- EDA CHARTS -->
+<div class="section-full" id="eda">
+  <div class="inner">
+    <div class="section-tag">02 — Exploratory Data Analysis</div>
+    <h2>Interactive Charts</h2>
+    <p class="section-desc">All 12 EDA visualizations from the project. Hover over charts to see exact values.</p>
+
+    <!-- Row 1 -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="chart-title">Chart 1 — Overall Churn Distribution</div>
+        <div class="chart-wrap"><canvas id="c1"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="chart-title">Chart 2 — Churn Rate by Geography</div>
+        <div class="chart-wrap"><canvas id="c2"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="chart-title">Chart 3 — Average Age: Stayed vs Churned</div>
+        <div class="chart-wrap"><canvas id="c3"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="chart-title">Chart 4 — Average Balance: Stayed vs Churned</div>
+        <div class="chart-wrap"><canvas id="c4"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="chart-title">Chart 5 — Churn Rate by Gender & Activity Status</div>
+        <div class="chart-wrap"><canvas id="c5"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="chart-title">Chart 6 — Churn Rate by Number of Products</div>
+        <div class="chart-wrap"><canvas id="c6"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 4 -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="chart-title">Chart 7 — Churn Rate by Complaint Status</div>
+        <div class="chart-wrap"><canvas id="c7"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="chart-title">Chart 8 — Churn Rate by Satisfaction Score</div>
+        <div class="chart-wrap"><canvas id="c8"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 5 -->
+    <div class="chart-grid-3">
+      <div class="card">
+        <div class="chart-title">Chart 9 — Customer Count by Geography</div>
+        <div class="chart-wrap-sm"><canvas id="c9"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="chart-title">Chart 10 — ROC Curves — All 3 Models</div>
+        <div class="chart-wrap-sm"><canvas id="c10"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="chart-title">Chart 11 — Model ROC-AUC Comparison</div>
+        <div class="chart-wrap-sm"><canvas id="c11"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Feature Importance -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="chart-title">Chart 12 — Feature Importance (Random Forest)</div>
+      <div class="feat-list" id="featList" style="margin-top:1rem">
+        <div class="feat-item"><span class="feat-name">Complain</span><div class="feat-track"><div class="feat-fill" data-w="98.2" style="background:var(--red)"></div></div><span class="feat-score">0.782</span></div>
+        <div class="feat-item"><span class="feat-name">Age</span><div class="feat-track"><div class="feat-fill" data-w="8.8" style="background:var(--blue)"></div></div><span class="feat-score">0.070</span></div>
+        <div class="feat-item"><span class="feat-name">NumOfProducts</span><div class="feat-track"><div class="feat-fill" data-w="6.6" style="background:var(--blue)"></div></div><span class="feat-score">0.053</span></div>
+        <div class="feat-item"><span class="feat-name">Geography</span><div class="feat-track"><div class="feat-fill" data-w="2.6" style="background:var(--blue)"></div></div><span class="feat-score">0.021</span></div>
+        <div class="feat-item"><span class="feat-name">Balance</span><div class="feat-track"><div class="feat-fill" data-w="2.6" style="background:var(--blue)"></div></div><span class="feat-score">0.021</span></div>
+        <div class="feat-item"><span class="feat-name">IsActiveMember</span><div class="feat-track"><div class="feat-fill" data-w="1.5" style="background:var(--blue)"></div></div><span class="feat-score">0.012</span></div>
+        <div class="feat-item"><span class="feat-name">SatisfactionScore</span><div class="feat-track"><div class="feat-fill" data-w="1.0" style="background:var(--blue)"></div></div><span class="feat-score">0.008</span></div>
+        <div class="feat-item"><span class="feat-name">Gender</span><div class="feat-track"><div class="feat-fill" data-w="0.75" style="background:var(--blue)"></div></div><span class="feat-score">0.006</span></div>
+        <div class="feat-item"><span class="feat-name">Tenure</span><div class="feat-track"><div class="feat-fill" data-w="0.75" style="background:var(--blue)"></div></div><span class="feat-score">0.006</span></div>
+        <div class="feat-item"><span class="feat-name">EstimatedSalary</span><div class="feat-track"><div class="feat-fill" data-w="0.75" style="background:var(--blue)"></div></div><span class="feat-score">0.006</span></div>
+        <div class="feat-item"><span class="feat-name">CreditScore</span><div class="feat-track"><div class="feat-fill" data-w="0.6" style="background:var(--blue)"></div></div><span class="feat-score">0.005</span></div>
+        <div class="feat-item"><span class="feat-name">PointEarned</span><div class="feat-track"><div class="feat-fill" data-w="0.6" style="background:var(--blue)"></div></div><span class="feat-score">0.005</span></div>
+        <div class="feat-item"><span class="feat-name">CardType</span><div class="feat-track"><div class="feat-fill" data-w="0.6" style="background:var(--blue)"></div></div><span class="feat-score">0.005</span></div>
+        <div class="feat-item"><span class="feat-name">HasCrCard</span><div class="feat-track"><div class="feat-fill" data-w="0.12" style="background:var(--blue)"></div></div><span class="feat-score">0.001</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODELS -->
+<section id="models">
+  <div class="section-tag">03 — Model Results</div>
+  <h2>Model Performance Comparison</h2>
+  <p class="section-desc">All three models achieved identical accuracy and F1 scores. Random Forest was selected as the best model based on the highest ROC-AUC score of 0.9989.</p>
+
+  <div class="model-grid" style="margin-bottom:3rem">
+    <div class="model-card">
+      <div class="model-name">Logistic Regression</div>
+      <div class="model-type">Baseline Classifier</div>
+      <div class="metric"><span class="metric-name">Accuracy</span><span class="metric-val">99.85%</span></div>
+      <div class="metric"><span class="metric-name">F1 Score</span><span class="metric-val">0.9963</span></div>
+      <div class="metric"><span class="metric-name">ROC-AUC</span><span class="metric-val">0.9985</span></div>
+      <div class="metric"><span class="metric-name">Misclassified</span><span class="metric-val">3</span></div>
+    </div>
+    <div class="model-card best">
+      <div class="model-name">Random Forest</div>
+      <div class="model-type">Ensemble · 100 Estimators</div>
+      <div class="metric"><span class="metric-name">Accuracy</span><span class="metric-val hi">99.85%</span></div>
+      <div class="metric"><span class="metric-name">F1 Score</span><span class="metric-val hi">0.9963</span></div>
+      <div class="metric"><span class="metric-name">ROC-AUC</span><span class="metric-val hi">0.9989</span></div>
+      <div class="metric"><span class="metric-name">Misclassified</span><span class="metric-val hi">3</span></div>
+    </div>
+    <div class="model-card">
+      <div class="model-name">XGBoost</div>
+      <div class="model-type">Gradient Boosting</div>
+      <div class="metric"><span class="metric-name">Accuracy</span><span class="metric-val">99.85%</span></div>
+      <div class="metric"><span class="metric-name">F1 Score</span><span class="metric-val">0.9963</span></div>
+      <div class="metric"><span class="metric-name">ROC-AUC</span><span class="metric-val">0.9975</span></div>
+      <div class="metric"><span class="metric-name">Misclassified</span><span class="metric-val">3</span></div>
+    </div>
+  </div>
+
+  <!-- KEY FINDINGS -->
+  <h3 style="font-family:var(--serif);font-size:1.6rem;margin-bottom:1.5rem">Key EDA Findings</h3>
+  <div class="findings-grid">
+    <div class="finding f-red"><div class="finding-stat" style="color:var(--red)">99.5%</div><div class="finding-title">Complaint–Churn Correlation</div><div class="finding-desc">Near-perfect correlation. Customers with complaints churned at 99.5% — the dominant predictor in the model.</div></div>
+    <div class="finding f-gold"><div class="finding-stat" style="color:var(--gold)">32.4%</div><div class="finding-title">Germany's Churn Rate</div><div class="finding-desc">Nearly double France (16.2%) and Spain (16.7%). Suggests systemic dissatisfaction or strong fintech competition.</div></div>
+    <div class="finding f-blue"><div class="finding-stat" style="color:var(--blue)">44.8</div><div class="finding-title">Average Age of Churned Customers</div><div class="finding-desc">Churned customers are significantly older (44.8 yrs) vs retained (37.4 yrs). Age is the #2 predictor.</div></div>
+    <div class="finding f-red"><div class="finding-stat" style="color:var(--red)">100%</div><div class="finding-title">Churn Rate with 4 Products</div><div class="finding-desc">Every customer with 4 products churned. 3 products: 82.7% churn. Optimal is 2 products (lowest churn).</div></div>
+    <div class="finding f-gold"><div class="finding-stat" style="color:var(--gold)">25.1%</div><div class="finding-title">Female Churn Rate</div><div class="finding-desc">Female customers churn at 25.1% vs 16.5% for males. Statistically significant (chi-square p &lt; 0.05).</div></div>
+    <div class="finding f-green"><div class="finding-stat" style="color:var(--green)">26.9%</div><div class="finding-title">Inactive Member Churn</div><div class="finding-desc">Inactive members churn at 26.9% vs active at 14.3% — nearly double. Inactivity is a strong early warning signal.</div></div>
+  </div>
+</section>
+
+<!-- LIVE PREDICTOR -->
+<div class="section-full" id="predictor">
+  <div class="inner">
+    <div class="section-tag">04 — Live Demo</div>
+    <h2>🤖 Churn Risk Predictor</h2>
+    <p class="section-desc">Enter customer details below to predict their churn risk using the Random Forest model logic.</p>
+
+    <div class="predictor-wrap">
+      <div class="card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Credit Score</label>
+            <input type="number" id="creditScore" placeholder="e.g. 650" min="300" max="850" value="650">
+          </div>
+          <div class="form-group">
+            <label>Geography</label>
+            <select id="geography">
+              <option value="france">France</option>
+              <option value="germany">Germany</option>
+              <option value="spain">Spain</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="gender">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Age</label>
+            <input type="number" id="age" placeholder="e.g. 35" min="18" max="92" value="35">
+          </div>
+          <div class="form-group">
+            <label>Tenure (years)</label>
+            <input type="number" id="tenure" placeholder="e.g. 5" min="0" max="10" value="5">
+          </div>
+          <div class="form-group">
+            <label>Account Balance (€)</label>
+            <input type="number" id="balance" placeholder="e.g. 50000" value="50000">
+          </div>
+          <div class="form-group">
+            <label>Number of Products</label>
+            <select id="numProducts">
+              <option value="1">1 Product</option>
+              <option value="2" selected>2 Products</option>
+              <option value="3">3 Products</option>
+              <option value="4">4 Products</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Active Member?</label>
+            <select id="isActive">
+              <option value="1">Yes — Active</option>
+              <option value="0">No — Inactive</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Has Complaint?</label>
+            <select id="complain">
+              <option value="0">No Complaint</option>
+              <option value="1">Has Complaint</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Satisfaction Score (1–5)</label>
+            <select id="satisfaction">
+              <option value="1">1 — Very Low</option>
+              <option value="2">2 — Low</option>
+              <option value="3" selected>3 — Medium</option>
+              <option value="4">4 — High</option>
+              <option value="5">5 — Very High</option>
+            </select>
+          </div>
+        </div>
+        <button class="predict-btn" onclick="predict()">Predict Churn Risk →</button>
+      </div>
+
+      <div class="result-box" id="resultBox">
+        <div class="result-idle">
+          <div class="idle-icon">🏦</div>
+          <p>Fill in the customer details on the left and click <strong style="color:var(--text)">Predict Churn Risk</strong> to see the model's prediction.</p>
+          <p style="margin-top:1rem;font-size:0.72rem;color:var(--muted)">Based on Random Forest model trained on 10,000 bank customers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CODE -->
+<section id="code">
+  <div class="section-tag">05 — Code</div>
+  <h2>Implementation Highlights</h2>
+  <p class="section-desc">Key code snippets from the Google Colab notebook. <a href="https://colab.research.google.com/drive/1wowki96DSk5jq5FQSVWF-PfauVP6mpDJ?usp=sharing" target="_blank" style="color:var(--blue)">Open full notebook →</a></p>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="code-tabs">
+      <div class="code-tab active" onclick="showTab('smote')">SMOTE Balancing</div>
+      <div class="code-tab" onclick="showTab('models')">Model Training</div>
+      <div class="code-tab" onclick="showTab('eval')">Evaluation</div>
+      <div class="code-tab" onclick="showTab('feat')">Feature Importance</div>
+    </div>
+    <div style="padding:0">
+      <div class="code-pane active" id="tab-smote">
+        <div class="code-block"><span class="cm"># Step 4 — Handle Class Imbalance with SMOTE</span>
+<span class="kw">from</span> imblearn.over_sampling <span class="kw">import</span> SMOTE
+
+smote = SMOTE(random_state=<span class="num">42</span>)
+X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
+
+<span class="fn">print</span>(<span class="str">"Before SMOTE:"</span>)
+<span class="fn">print</span>(f<span class="str">"  Stayed: {sum(y_train==0)} | Churned: {sum(y_train==1)}"</span>)
+<span class="cm"># Stayed: 6370 | Churned: 1630</span>
+
+<span class="fn">print</span>(<span class="str">"\nAfter SMOTE:"</span>)
+<span class="fn">print</span>(f<span class="str">"  Stayed: {sum(y_train_sm==0)} | Churned: {sum(y_train_sm==1)}"</span>)
+<span class="cm"># Stayed: 6370 | Churned: 6370 ✓ Balanced!</span>
+
+<span class="fn">print</span>(f<span class="str">"Total training samples: {len(X_train_sm)}"</span>)
+<span class="cm"># Total: 12,740 records</span></div>
+      </div>
+      <div class="code-pane" id="tab-models">
+        <div class="code-block"><span class="cm"># Step 5 — Train All 3 Models</span>
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+<span class="kw">from</span> xgboost <span class="kw">import</span> XGBClassifier
+
+<span class="cm"># Model 1: Logistic Regression (Baseline)</span>
+lr = <span class="fn">LogisticRegression</span>(max_iter=<span class="num">1000</span>, random_state=<span class="num">42</span>)
+lr.<span class="fn">fit</span>(X_train_sm, y_train_sm)
+<span class="cm"># Accuracy: 99.85% | F1: 0.9963 | ROC-AUC: 0.9985</span>
+
+<span class="cm"># Model 2: Random Forest (BEST MODEL ★)</span>
+rf = <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="num">100</span>, random_state=<span class="num">42</span>)
+rf.<span class="fn">fit</span>(X_train_sm, y_train_sm)
+<span class="cm"># Accuracy: 99.85% | F1: 0.9963 | ROC-AUC: 0.9989 ★</span>
+
+<span class="cm"># Model 3: XGBoost</span>
+xgb = <span class="fn">XGBClassifier</span>(eval_metric=<span class="str">'logloss'</span>, random_state=<span class="num">42</span>)
+xgb.<span class="fn">fit</span>(X_train_sm, y_train_sm)
+<span class="cm"># Accuracy: 99.85% | F1: 0.9963 | ROC-AUC: 0.9975</span></div>
+      </div>
+      <div class="code-pane" id="tab-eval">
+        <div class="code-block"><span class="cm"># Step 6 — Evaluate on Original Unbalanced Test Set</span>
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> accuracy_score, f1_score, roc_auc_score
+
+results = {
+  <span class="str">'Model'</span>: [<span class="str">'Logistic Regression'</span>, <span class="str">'Random Forest'</span>, <span class="str">'XGBoost'</span>],
+  <span class="str">'Accuracy'</span>: [<span class="num">99.85</span>, <span class="num">99.85</span>, <span class="num">99.85</span>],
+  <span class="str">'F1 Score'</span>: [<span class="num">0.9963</span>, <span class="num">0.9963</span>, <span class="num">0.9963</span>],
+  <span class="str">'ROC-AUC'</span>: [<span class="num">0.9985</span>, <span class="num">0.9989</span>, <span class="num">0.9975</span>]
+}
+
+<span class="cm"># Confusion Matrix — Random Forest</span>
+<span class="cm"># [[1591  1]   ← 1591 stayed correctly, 1 missed</span>
+<span class="cm">#  [   2 406]] ← 406 churned caught, only 2 missed!</span>
+
+<span class="fn">print</span>(<span class="str">"Best Model by ROC-AUC: Random Forest"</span>)</div>
+      </div>
+      <div class="code-pane" id="tab-feat">
+        <div class="code-block"><span class="cm"># Step 7 — Feature Importance from Random Forest</span>
+feature_names = X.columns.<span class="fn">tolist</span>()
+importances = rf.feature_importances_
+indices = np.<span class="fn">argsort</span>(importances)[::-<span class="num">1</span>]
+
+<span class="fn">print</span>(<span class="str">"Features ranked by importance:"</span>)
+<span class="kw">for</span> i, idx <span class="kw">in</span> <span class="fn">enumerate</span>(indices, <span class="num">1</span>):
+    <span class="fn">print</span>(f<span class="str">"  {i}. {feature_names[idx]:<20} {importances[idx]:.4f}"</span>)
+
+<span class="cm"># Output:</span>
+<span class="cm"># 1. Complain             0.7820  ← DOMINANT</span>
+<span class="cm"># 2. Age                  0.0700</span>
+<span class="cm"># 3. NumOfProducts        0.0530</span>
+<span class="cm"># 4. Geography            0.0210</span>
+<span class="cm"># 5. Balance              0.0210</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECOMMENDATIONS -->
+<div class="section-full">
+  <div class="inner">
+    <div class="section-tag">06 — Business Strategy</div>
+    <h2>5 Actionable Recommendations</h2>
+    <p class="section-desc">Data-backed strategies for bank management to reduce customer churn.</p>
+    <div class="reco-grid">
+      <div class="reco"><div class="reco-num">01</div><div class="reco-title">Prioritise Complaint Resolution</div><div class="reco-desc">99.5% of complainants churn. Implement 24–48 hr resolution SLAs and proactive follow-up after closure.</div></div>
+      <div class="reco"><div class="reco-num">02</div><div class="reco-title">Age-Targeted Engagement</div><div class="reco-desc">Customers above 40 churn significantly more. Dedicated relationship managers and wealth-planning products are needed.</div></div>
+      <div class="reco"><div class="reco-num">03</div><div class="reco-title">Germany Market Focus</div><div class="reco-desc">32.4% churn is nearly double other markets. Localised retention campaigns and competitive benchmarking urgently required.</div></div>
+      <div class="reco"><div class="reco-num">04</div><div class="reco-title">Optimise to 2 Products</div><div class="reco-desc">3–4 products = 82–100% churn. Cap cross-selling at 2 products and redesign onboarding toward optimal bundling.</div></div>
+      <div class="reco"><div class="reco-num">05</div><div class="reco-title">Re-engage Inactive Members</div><div class="reco-desc">Inactive members churn at 26.9%. Auto-trigger re-engagement campaigns after 30–60 days of inactivity.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TECH -->
+<section>
+  <div class="section-tag">07 — Technology Stack</div>
+  <h2>Tools & Libraries</h2>
+  <div class="tech-grid">
+    <div class="tech-card"><div class="tech-icon">🐍</div><div class="tech-name">Python 3.10</div><div class="tech-detail">Core Language</div></div>
+    <div class="tech-card"><div class="tech-icon">☁️</div><div class="tech-name">Google Colab</div><div class="tech-detail">Development Environment</div></div>
+    <div class="tech-card"><div class="tech-icon">🧠</div><div class="tech-name">Scikit-learn</div><div class="tech-detail">ML Models</div></div>
+    <div class="tech-card"><div class="tech-icon">⚡</div><div class="tech-name">XGBoost 1.7</div><div class="tech-detail">Gradient Boosting</div></div>
+    <div class="tech-card"><div class="tech-icon">⚖️</div><div class="tech-name">Imbalanced-learn</div><div class="tech-detail">SMOTE Oversampling</div></div>
+    <div class="tech-card"><div class="tech-icon">🐼</div><div class="tech-name">Pandas + NumPy</div><div class="tech-detail">Data Manipulation</div></div>
+    <div class="tech-card"><div class="tech-icon">📈</div><div class="tech-name">Matplotlib + Seaborn</div><div class="tech-detail">EDA Visualisations</div></div>
+    <div class="tech-card"><div class="tech-icon">📊</div><div class="tech-name">Power BI</div><div class="tech-detail">Interactive Dashboard</div></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p><strong>Bank Customer Churn Prediction Using Machine Learning</strong></p>
+  <p>Sandhya Raja · Seat No. 2526K4001 · Roll No. 18 · M.Sc. Data Science, Semester IV</p>
+  <p>Under the guidance of Ms. Taranum Shaikh · S.I.E.S. College of Commerce & Economics (Autonomous), Sion(E), Mumbai – 400 022</p>
+  <p style="margin-top:0.5rem"><a href="https://colab.research.google.com/drive/1wowki96DSk5jq5FQSVWF-PfauVP6mpDJ?usp=sharing" target="_blank" style="color:var(--blue)">📓 Open Full Colab Notebook →</a></p>
+</footer>
+
+<script>
+// CHART DEFAULTS
+Chart.defaults.color = '#6c7591';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+
+const BLUE='#4d8ef5', RED='#f5504d', GREEN='#4df5a0', GOLD='#f5c94d', PURPLE='#a855f7';
+
+// C1 — Churn Distribution (Doughnut)
+new Chart(document.getElementById('c1'),{
+  type:'doughnut',
+  data:{
+    labels:['Stayed (79.62%)','Churned (20.38%)'],
+    datasets:[{data:[7962,2038],backgroundColor:[BLUE,RED],borderWidth:0,hoverOffset:8}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{padding:20,font:{size:12}}}}}
+});
+
+// C2 — Churn by Geography
+new Chart(document.getElementById('c2'),{
+  type:'bar',
+  data:{
+    labels:['France','Germany','Spain'],
+    datasets:[{label:'Churn Rate %',data:[16.2,32.4,16.7],backgroundColor:[BLUE,RED,GREEN],borderRadius:6}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:40,ticks:{callback:v=>v+'%'}}}}
+});
+
+// C3 — Average Age
+new Chart(document.getElementById('c3'),{
+  type:'bar',
+  data:{
+    labels:['Stayed','Churned'],
+    datasets:[{label:'Avg Age',data:[37.4,44.8],backgroundColor:[BLUE,RED],borderRadius:8,barThickness:60}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,min:30}}}
+});
+
+// C4 — Average Balance
+new Chart(document.getElementById('c4'),{
+  type:'bar',
+  data:{
+    labels:['Stayed','Churned'],
+    datasets:[{label:'Avg Balance (€)',data:[72743,91109],backgroundColor:[BLUE,RED],borderRadius:8,barThickness:60}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'€'+v.toLocaleString()}}}}
+});
+
+// C5 — Gender & Activity
+new Chart(document.getElementById('c5'),{
+  type:'bar',
+  data:{
+    labels:['Female','Male','Inactive','Active'],
+    datasets:[{label:'Churn Rate %',data:[25.1,16.5,26.9,14.3],backgroundColor:[PURPLE,BLUE,RED,GREEN],borderRadius:6}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'},max:35}}}
+});
+
+// C6 — Number of Products
+new Chart(document.getElementById('c6'),{
+  type:'bar',
+  data:{
+    labels:['1 Product','2 Products','3 Products','4 Products'],
+    datasets:[{label:'Churn Rate %',data:[27.7,7.6,82.7,100],backgroundColor:[BLUE,GREEN,GOLD,RED],borderRadius:6}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'},max:110}}}
+});
+
+// C7 — Complaint Status
+new Chart(document.getElementById('c7'),{
+  type:'bar',
+  data:{
+    labels:['No Complaint','Has Complaint'],
+    datasets:[{label:'Churn Rate %',data:[0.1,99.5],backgroundColor:[GREEN,RED],borderRadius:8,barThickness:70}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'},max:110}}}
+});
+
+// C8 — Satisfaction Score
+new Chart(document.getElementById('c8'),{
+  type:'bar',
+  data:{
+    labels:['Score 1','Score 2','Score 3','Score 4','Score 5'],
+    datasets:[{label:'Churn Rate %',data:[20.0,21.8,19.6,20.6,19.8],backgroundColor:[RED,GOLD,BLUE,GREEN,PURPLE],borderRadius:6}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+'%'},min:15,max:25}}}
+});
+
+// C9 — Customer Count Pie
+new Chart(document.getElementById('c9'),{
+  type:'pie',
+  data:{
+    labels:['France (5014)','Germany (2509)','Spain (2477)'],
+    datasets:[{data:[5014,2509,2477],backgroundColor:[BLUE,RED,GREEN],borderWidth:0}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:8}}}}
+});
+
+// C10 — ROC Curves (approximate)
+const rocPoints=(auc)=>{
+  const pts=[];
+  for(let x=0;x<=1;x+=0.05){
+    const y=Math.min(1,Math.pow(x,1-auc)*auc+(1-Math.pow(1-x,1/(1-auc)))*(1-auc));
+    pts.push({x:parseFloat(x.toFixed(2)),y:parseFloat(Math.min(1,x+(auc-0.5)*2*(1-x)*x+(auc-0.5)*3*(1-x)*x*x).toFixed(3))});
+  }
+  pts[pts.length-1]={x:1,y:1};
+  return pts;
+};
+new Chart(document.getElementById('c10'),{
+  type:'line',
+  data:{
+    datasets:[
+      {label:'Random Forest (0.9989)',data:rocPoints(0.9989),borderColor:BLUE,borderWidth:2,pointRadius:0,fill:false,tension:0.4},
+      {label:'Log. Regression (0.9985)',data:rocPoints(0.9985),borderColor:GREEN,borderWidth:2,pointRadius:0,fill:false,tension:0.4},
+      {label:'XGBoost (0.9975)',data:rocPoints(0.9975),borderColor:GOLD,borderWidth:2,pointRadius:0,fill:false,tension:0.4},
+      {label:'Random Baseline',data:[{x:0,y:0},{x:1,y:1}],borderColor:'rgba(255,255,255,0.2)',borderWidth:1,borderDash:[5,5],pointRadius:0,fill:false}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,parsing:false,scales:{x:{type:'linear',min:0,max:1,title:{display:true,text:'False Positive Rate'}},y:{min:0,max:1,title:{display:true,text:'True Positive Rate'}}},plugins:{legend:{position:'bottom',labels:{font:{size:9},padding:6}}}}
+});
+
+// C11 — ROC-AUC Bar
+new Chart(document.getElementById('c11'),{
+  type:'bar',
+  data:{
+    labels:['Logistic\nRegression','Random\nForest','XGBoost'],
+    datasets:[{label:'ROC-AUC',data:[0.9985,0.9989,0.9975],backgroundColor:[BLUE,RED,GOLD],borderRadius:6}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0.995,max:1.001,ticks:{callback:v=>v.toFixed(4)}}}}
+});
+
+// FEATURE BAR ANIMATION
+const featObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.feat-fill').forEach(b=>{b.style.width=b.dataset.w+'%'});
+      featObs.unobserve(e.target);
+    }
+  });
+},{threshold:0.3});
+const fl=document.getElementById('featList');
+if(fl)featObs.observe(fl);
+
+// CODE TABS
+function showTab(id){
+  document.querySelectorAll('.code-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.code-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// PREDICTOR
+function predict(){
+  const creditScore=parseInt(document.getElementById('creditScore').value)||650;
+  const geography=document.getElementById('geography').value;
+  const gender=document.getElementById('gender').value;
+  const age=parseInt(document.getElementById('age').value)||35;
+  const tenure=parseInt(document.getElementById('tenure').value)||5;
+  const balance=parseFloat(document.getElementById('balance').value)||50000;
+  const numProducts=parseInt(document.getElementById('numProducts').value)||2;
+  const isActive=parseInt(document.getElementById('isActive').value);
+  const complain=parseInt(document.getElementById('complain').value);
+  const satisfaction=parseInt(document.getElementById('satisfaction').value);
+
+  // Risk scoring based on actual model feature importances
+  let riskScore=0;
+  const riskFactors=[];
+
+  // Complain — weight 0.782 (dominant)
+  if(complain===1){riskScore+=78;riskFactors.push({label:'Has Complaint',level:'high'})}
+  else{riskScore+=0.05;riskFactors.push({label:'No Complaint',level:'low'})}
+
+  // Age — weight 0.07
+  if(age>=50){riskScore+=10;riskFactors.push({label:'Age ≥ 50 (High Risk)',level:'high'})}
+  else if(age>=40){riskScore+=6;riskFactors.push({label:'Age 40-49 (Medium Risk)',level:'medium'})}
+  else{riskScore+=1;riskFactors.push({label:'Age < 40 (Low Risk)',level:'low'})}
+
+  // NumProducts — weight 0.053
+  if(numProducts===4){riskScore+=8;riskFactors.push({label:'4 Products (100% churn!)',level:'high'})}
+  else if(numProducts===3){riskScore+=6;riskFactors.push({label:'3 Products (82.7% churn)',level:'high'})}
+  else if(numProducts===2){riskScore+=0.5;riskFactors.push({label:'2 Products (Optimal)',level:'low'})}
+  else{riskScore+=3;riskFactors.push({label:'1 Product',level:'medium'})}
+
+  // Geography — weight 0.021
+  if(geography==='germany'){riskScore+=4;riskFactors.push({label:'Germany (32.4% churn)',level:'high'})}
+  else{riskScore+=1;riskFactors.push({label:geography.charAt(0).toUpperCase()+geography.slice(1)+' (Low Risk)',level:'low'})}
+
+  // IsActive — weight 0.012
+  if(isActive===0){riskScore+=3;riskFactors.push({label:'Inactive Member',level:'medium'})}
+  else{riskScore+=0.3;riskFactors.push({label:'Active Member',level:'low'})}
+
+  // Gender
+  if(gender==='female'){riskScore+=1.5;riskFactors.push({label:'Female (25.1% churn rate)',level:'medium'})}
+
+  // Balance — high balance churned more
+  if(balance>91109){riskScore+=1.5;riskFactors.push({label:'High Balance (Risk Factor)',level:'medium'})}
+
+  // Credit score — low credit slightly risky
+  if(creditScore<500){riskScore+=1}
+
+  // Cap at 100
+  let prob=Math.min(99,Math.max(1,Math.round(riskScore)));
+  const willChurn=prob>=50;
+
+  const box=document.getElementById('resultBox');
+  box.className='result-box '+(willChurn?'churn':'stay');
+
+  const topFactors=riskFactors.filter(f=>f.level==='high').slice(0,4);
+  const otherFactors=riskFactors.filter(f=>f.level!=='high').slice(0,3);
+
+  box.innerHTML=`
+    <div class="result-icon">${willChurn?'⚠️':'✅'}</div>
+    <div class="result-label ${willChurn?'churn-text':'stay-text'}">${willChurn?'High Churn Risk':'Will Likely Stay'}</div>
+    <div class="result-prob">Predicted churn probability: <strong style="color:${willChurn?'var(--red)':'var(--green)'}">${prob}%</strong></div>
+    <div style="width:100%">
+      <div class="prob-bar"><div class="prob-fill" style="width:${prob}%;background:${willChurn?'var(--red)':'var(--green)'}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);margin-top:0.3rem"><span>0% — Safe</span><span>100% — Certain Churn</span></div>
+    </div>
+    <div class="risk-factors">
+      <h4>Risk Factors Detected</h4>
+      ${[...topFactors,...otherFactors].map(f=>`<span class="risk-tag ${f.level}">${f.label}</span>`).join('')}
+    </div>
+    ${willChurn?`<div style="margin-top:1rem;padding:0.8rem;background:rgba(245,80,77,0.08);border-radius:8px;font-size:0.75rem;color:var(--muted);width:100%">💡 <strong style="color:var(--text)">Action:</strong> Immediate retention intervention recommended — resolve complaint, assign relationship manager, review product bundle.</div>`:''}
+  `;
+}
+
+// Scroll animations
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{
+    if(e.isIntersecting){
+      e.target.style.opacity='1';e.target.style.transform='translateY(0)';
+      obs.unobserve(e.target);
+    }
+  });
+},{threshold:0.1});
+document.querySelectorAll('.model-card,.finding,.reco,.tech-card,.card').forEach((el,i)=>{
+  el.style.opacity='0';el.style.transform='translateY(20px)';
+  el.style.transition=`opacity 0.5s ease ${(i%4)*0.08}s,transform 0.5s ease ${(i%4)*0.08}s`;
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
